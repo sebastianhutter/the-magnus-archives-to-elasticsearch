@@ -39,8 +39,6 @@ def get_files_to_parse(path: str):
     :return: list of paths
     """
 
-    files = list()
-
     # if the given path is a file, return it
     if os.path.isfile(path):
         return [path]
