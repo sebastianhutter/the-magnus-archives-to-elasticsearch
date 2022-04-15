@@ -1,0 +1,4 @@
+click
+python-docx
+elasticsearch
+requests
