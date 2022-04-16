@@ -266,8 +266,6 @@ class MagnusEpisode(object):
 
         return False
 
-
-
     def _is_acting_line(self, line: str):
         """
         return true if the line is an acting instruction
@@ -296,6 +294,7 @@ class MagnusEpisode(object):
         actors_line = actors_line.replace('(CON’T)', '')
         actors_line = actors_line.replace('(STATEMENT)', '')
         actors_line = actors_line.replace('(BACKGROUND)', '')
+        actors_line = actors_line.replace('(DISTANT)', '')
         actors_line = actors_line.replace('(Cont.)', '')
         actors_line = actors_line.replace('Cont.', '')
         actors_line = actors_line.strip()
