@@ -7,9 +7,6 @@ import os
 from transcript import MagnusEpisode, MagnusEpisodeIndex, MagnusTranscriptIndex
 from es import ElasticManagement, KibanaManagement
 
-# setup logging
-logging.basicConfig(level=logging.INFO)
-
 def initialize_elasticsearch():
     """
     setup elasticsearch indices
@@ -46,15 +43,22 @@ def get_files_to_parse(path: str):
     # if not get all files in the directory
     return [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
-
-def load_and_index_file(path: str):
+def parse_file(path: str):
     """
-    parses the given word document and loads it into elasticsearch
-    :param path: path to file
+    parse the given file
+    :param path: path to docx
+    :return: MagnusEpside
+    """
+
+    return MagnusEpisode(doc=path)
+
+def index_episode(episode: MagnusEpisode):
+    """
+    send episode to elasitcsearch
+    :param episode:
     :return:
     """
 
-    episode = MagnusEpisode(doc=path)
     em = ElasticManagement()
 
     # create or update entry in episode index
@@ -64,18 +68,33 @@ def load_and_index_file(path: str):
     for l in episode.lines:
         em.feed_index(index_name=MagnusTranscriptIndex.index_name, data=l.index_document(), id=l.index_document_id())
 
-
 @click.command()
 @click.argument(
-    'filename',
+    'path',
     type=click.Path(exists=True),
+    nargs=-1
 )
-def run(filename):
+@click.option(
+    '--loglevel',
+    required=False,
+    envvar='LOGLEVEL',
+    type=click.Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']),
+    default="INFO",
+    help="The loglevel for the script execution",
+    show_default=True
+)
+def run(path, loglevel):
     """
     setup elasticsearch and run indexing for a single document or folder
-    :param filename:
+
     :return:
     """
+
+    # setup logging
+    logging.basicConfig(level=loglevel)
+    # we dont want to spam the log if set to debug or info!
+    logging.getLogger('elastic_transport.transport').setLevel(logging.ERROR)
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.ERROR)
 
     initialize_elasticsearch()
     initialize_kibana()
@@ -83,14 +102,21 @@ def run(filename):
     # if the given filename is a folder,
     # loop over all files in the folder,
     # if its a file just parse the single file
-    files_to_parse = get_files_to_parse(filename)
+    files_to_parse = list()
+    for p in path:
+        files_to_parse.extend(get_files_to_parse(p))
 
     for f in files_to_parse:
         try:
-            load_and_index_file(f)
+            e = parse_file(f)
+        except BaseException as e:
+            logging.warning(f'Unable to parse document {f}: {e}')
+            continue
+        try:
+            index_episode(e)
         except BaseException as e:
             logging.warning(f'Unable to index document {f}: {e}')
-
+            continue
 
 if __name__ == '__main__':
     try:
