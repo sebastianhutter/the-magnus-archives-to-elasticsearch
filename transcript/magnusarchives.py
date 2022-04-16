@@ -169,7 +169,7 @@ class MagnusEpisode(object):
         :return: true or false
         """
 
-        if line.lower().startswith('content warnings'):
+        if line.lower().startswith('content warning'):
             return True
 
         return False
@@ -185,6 +185,12 @@ class MagnusEpisode(object):
         if line.lower() == '[the magnus archives theme - intro]' \
             or line.lower() == '[the magnus archives theme – intro]' \
                 or line.lower() == '[the magnus archives theme – intro]':
+            return True
+
+        # lets make sure simple spelling errors can be handled
+        if line.lower() == '[the magnus archives theme - into]' \
+            or line.lower() == '[the magnus archives theme – into]' \
+                or line.lower() == '[the magnus archives theme – into]':
             return True
 
         return False
@@ -326,6 +332,7 @@ class MagnusEpisode(object):
             # line breaks which hide meta information (e.g. ACTOR\lntext)
             # to ensure we can properly parse all lines we need to break them up again
             for txt in paragrah_text.splitlines():
+                print(txt)
                 # ignore paragraphs
                 if txt in self.paragraphs_to_ignore_in_transcripts:
                     logging.debug(f'ignoring paragraph: "{txt}"')
