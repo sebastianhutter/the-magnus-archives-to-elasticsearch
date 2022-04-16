@@ -326,6 +326,16 @@ class MagnusEpisode(object):
                     is_episode_transcript = False
                     continue
 
+                # here is a hack for our ruleset
+                # in some transcripts the theme intro paragraph is missing (season 01, episode 22)
+                # in this case we try the following,
+                # if we are inside a content_warning loop but the current line is an sfx, an actor instruction
+                # or an acting instruction we disable the content_warning loop and enable the transcript loop
+                if is_content_warning \
+                    and (self._is_sfx_line(txt) or self._is_acting_line(txt) or self._is_actor_line(txt)):
+                    is_content_warning = False
+                    is_episode_transcript = True
+
                 # with the rules defined we can start to fill in the transcript object
                 # if we are parsing content warnings fill them into the matching list
                 if is_content_warning:
@@ -343,7 +353,6 @@ class MagnusEpisode(object):
                     # third: in some transcripts multiple actors are specified, so we need to split those up
                     # fourth: in some transcripts the spoken line by the actor is also in all UPPERCASE so we need to make sure to ignore these
                     if self._is_actor_line(txt) and last_line_was != 'actor':
-
                         current_actors = self._get_actors_from_actor_line(txt)
                         for a in current_actors:
                             if a not in self.actors:
@@ -357,7 +366,7 @@ class MagnusEpisode(object):
                     # we should be in a place now where we only have "content"
                     # so lets figure out which our current position in the transcript is
                     # to ensure we have the correct ordering in place
-                    line_position = len(self.lines) + 1 if len(self.lines) > 0 else 0
+                    line_position = len(self.lines) + 1 if len(self.lines) > 0 else 1
 
                     # if the line starts and ends with [ and ] its an sfx instruction
                     if self._is_sfx_line(txt):
