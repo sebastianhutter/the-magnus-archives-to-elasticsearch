@@ -272,6 +272,7 @@ class MagnusEpisode(object):
         # strip CONTINUED from the text before checking
         actors_line = line.replace('(CONTINUED)', '')
         actors_line = actors_line.replace('(CONT’D)', '')
+        actors_line = actors_line.replace('(STATEMENT)', '')
         actors_line = actors_line.strip()
 
         # split up the line by , and AND
