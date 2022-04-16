@@ -10,10 +10,16 @@ class MagnusEpisodeIndex(object):
     """
 
     index_name = 'the_magnus_archives_episodes'
-    index_settings = {
-        "index.number_of_replicas": 0,
-        "index.number_of_shards": 1
-    }
+    index_settings = dict(
+        index=dict(
+            number_of_replicas=0,
+            number_of_shards=1,
+            sort=dict(
+                field=['episode_number'],
+                order=['asc']
+            )
+        )
+    )
     index_mappings = dict(
         properties=dict(
             episode_number=dict(
@@ -38,10 +44,16 @@ class MagnusTranscriptIndex(object):
     """
 
     index_name = 'the_magnus_archives_transcripts'
-    index_settings = {
-        "index.number_of_replicas": 0,
-        "index.number_of_shards": 1
-    }
+    index_settings = dict(
+        index=dict(
+            number_of_replicas=0,
+            number_of_shards=1,
+            sort=dict(
+                field=['episode_number', 'position'],
+                order=['asc', 'asc']
+            )
+        )
+    )
     index_mappings = dict(
         properties=dict(
             episode_number=dict(
