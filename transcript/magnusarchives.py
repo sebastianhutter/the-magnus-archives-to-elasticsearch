@@ -232,6 +232,20 @@ class MagnusEpisode(object):
 
         return False
 
+    def _is_legacy_transcript(self, title: str):
+        """
+        return true if the given title belongs to a legacy transcript
+        :param title: the episode title
+        :return: true or false
+        """
+
+        pat = re.compile(r'^Case\s\d+[-\w]?')
+
+        if pat.match(title):
+            return True
+
+        return False
+
     def _is_sfx_line(self, line: str):
         """
         return true if the line is a sfx instruction
@@ -414,6 +428,17 @@ class MagnusEpisode(object):
                 # or an acting instruction we disable the content_warning loop and enable the transcript loop
                 if is_content_warning \
                     and (self._is_sfx_line(txt) or self._is_acting_line(txt) or self._is_actor_line(txt)):
+                    is_content_warning = False
+                    is_episode_transcript = True
+
+                # and another workaround for the ruleset.
+                # the current legacy transcripts for season 02 available for download
+                # don't contain any content warnings nor an intro paragraph.
+                # the season 02 transcripts contain the word "case \d\d\d\d" in the episode
+                # title. if we find this one and we have a sfx line ([CLICK]) then we assume we are inside
+                # the episode transcript
+                if self._is_legacy_transcript(self.episode_title) \
+                        and self._is_sfx_line(txt):
                     is_content_warning = False
                     is_episode_transcript = True
 
