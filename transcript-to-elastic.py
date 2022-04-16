@@ -108,15 +108,10 @@ def run(path, loglevel):
 
     for f in files_to_parse:
         try:
-            e = parse_file(f)
+            parsed_file = parse_file(f)
+            index_episode(parsed_file)
         except BaseException as e:
-            logging.warning(f'Unable to parse document {f}: {e}')
-            continue
-        try:
-            index_episode(e)
-        except BaseException as e:
-            logging.warning(f'Unable to index document {f}: {e}')
-            continue
+            logging.warning(f'Unable to parse or index document {f}: {e}')
 
 if __name__ == '__main__':
     try:
