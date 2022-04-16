@@ -1,3 +1,4 @@
+import os.path
 from docx import Document
 import logging
 import re
@@ -27,6 +28,9 @@ class MagnusEpisodeIndex(object):
                 type='short',
             ),
             episode_title=dict(
+                type='text',
+            ),
+            filename=dict(
                 type='text',
             ),
             content_warnings=dict(
@@ -133,6 +137,7 @@ class MagnusEpisode(object):
         self.content_warnings = list()
         self.actors = list()
         self.lines = list()
+        self.filename = os.path.basename(doc)
 
         self.paragraphs_to_ignore_in_transcripts = [
             None,
@@ -445,6 +450,7 @@ class MagnusEpisode(object):
             episode_title=self.episode_title,
             content_warnings=self.content_warnings,
             actors=self.actors,
+            filename=self.filename
         )
 
     
