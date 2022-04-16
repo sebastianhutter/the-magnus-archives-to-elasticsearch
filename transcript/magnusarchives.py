@@ -357,7 +357,7 @@ class MagnusEpisode(object):
         # the first paragraph is contains the title and episode number
         # some paragraphs look like this "MAG 187 — Checking Out" some like "MAG – 012 – First Aid"
         # so we need to do some regexp magic
-        pat = re.compile(r'^MAG\s[-–—]?\s?(?P<number>\d+\.?\d*)\s[-–—]?\s?(?P<title>[\w\s’\'\-"]+)$')
+        pat = re.compile(r'^MAG\s?[-–—]?\s?(?P<number>\d+\.?\d*)\s[-–—]?\s?(?P<title>[\d\w\s’\'\-–"“”]+)$')
         match = pat.match(paragraphs[0].text)
 
         if not match:
