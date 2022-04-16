@@ -7,7 +7,7 @@ import os
 from transcript import MagnusEpisode, MagnusEpisodeIndex, MagnusTranscriptIndex
 from es import ElasticManagement, KibanaManagement
 
-def initialize_elasticsearch(recreate_indices: bool):
+def initialize_elasticsearch_for_magnus_archives(recreate_indices: bool):
     """
     setup elasticsearch indices
     :return:
@@ -22,7 +22,7 @@ def initialize_elasticsearch(recreate_indices: bool):
     em.create_index(index_name=MagnusEpisodeIndex.index_name, mappings=MagnusEpisodeIndex.index_mappings, settings=MagnusEpisodeIndex.index_settings)
     em.create_index(index_name=MagnusTranscriptIndex.index_name, mappings=MagnusTranscriptIndex.index_mappings, settings=MagnusTranscriptIndex.index_settings)
 
-def initialize_kibana():
+def initialize_kibana_for_magnus_archives():
     """
     setup kibana data views
     :return:
@@ -47,7 +47,7 @@ def get_files_to_parse(path: str):
     # if not get all files in the directory
     return [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
-def parse_file(path: str):
+def parse_file_for_magnus_archives(path: str):
     """
     parse the given file
     :param path: path to docx
@@ -56,7 +56,7 @@ def parse_file(path: str):
 
     return MagnusEpisode(doc=path)
 
-def index_episode(episode: MagnusEpisode):
+def index_episode_for_magnus_archives(episode: MagnusEpisode):
     """
     send episode to elasitcsearch
     :param episode:
@@ -96,7 +96,16 @@ def index_episode(episode: MagnusEpisode):
     help="Delete and create elasticsearch indices before importing transcripts?",
     show_default=True
 )
-def run(path, loglevel, recreate_indices):
+@click.option(
+    '--show',
+    required=True,
+    envvar='SHOW',
+    default='magnus',
+    type=click.Choice(['magnus']),
+    help='Transcripts are parsed for which show?',
+    show_default=True
+)
+def run(path, loglevel, recreate_indices, show):
     """
     setup elasticsearch and run indexing for a single document or folder
 
@@ -109,23 +118,25 @@ def run(path, loglevel, recreate_indices):
     logging.getLogger('elastic_transport.transport').setLevel(logging.ERROR)
     logging.getLogger('urllib3.connectionpool').setLevel(logging.ERROR)
 
-    initialize_elasticsearch(recreate_indices=recreate_indices)
-    initialize_kibana()
-
-
-    # if the given filename is a folder,
-    # loop over all files in the folder,
-    # if its a file just parse the single file
+    # get all files to parse,
+    # if the given filename is a folder, loop over all files in the folder,
+    # if its just a single file, get back the single file
     files_to_parse = list()
     for p in path:
         files_to_parse.extend(get_files_to_parse(p))
 
-    for f in files_to_parse:
-        try:
-            parsed_file = parse_file(f)
-            index_episode(parsed_file)
-        except BaseException as e:
-            logging.warning(f'Unable to parse or index document {f}: {e}')
+    # depending on the show we may use different setup and parsing functions
+    # at the moment the script only supports magnus archive. but better be prepared!
+    if show == 'magnus':
+        initialize_elasticsearch_for_magnus_archives(recreate_indices=recreate_indices)
+        initialize_kibana_for_magnus_archives()
+
+        for f in files_to_parse:
+            try:
+                parsed_file = parse_file_for_magnus_archives(f)
+                index_episode_for_magnus_archives(parsed_file)
+            except BaseException as e:
+                logging.warning(f'Unable to parse or index document {f}: {e}')
 
 if __name__ == '__main__':
     try:
