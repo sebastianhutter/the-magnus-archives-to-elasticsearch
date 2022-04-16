@@ -245,6 +245,23 @@ class MagnusEpisode(object):
 
         return False
 
+    def _clear_up_actor_line(self, line: str):
+        """
+        remove continued snippets and similar from the potential actor line
+
+        :param line:
+        :return: cleared up line
+        """
+
+        actors_line = line.replace('(CONTINUED)', '')
+        actors_line = actors_line.replace('(CONT’D)', '')
+        actors_line = actors_line.replace('(STATEMENT)', '')
+        actors_line = actors_line.replace('(Cont.)', '')
+        actors_line = actors_line.replace('Cont.', '')
+        actors_line = actors_line.strip()
+
+        return actors_line
+
     def _is_actor_line(self, line: str):
         """
         return true if the line is an actor line
@@ -257,7 +274,7 @@ class MagnusEpisode(object):
         # check if line isnt empty, check if line is all in uppercase,
         # ensure no sfx or acting instructions are given
         if line \
-            and line.isupper() \
+            and self._clear_up_actor_line(line).isupper() \
             and not self._is_sfx_line(line) \
                 and not self._is_acting_line(line):
 
@@ -275,10 +292,7 @@ class MagnusEpisode(object):
         """
 
         # strip CONTINUED from the text before checking
-        actors_line = line.replace('(CONTINUED)', '')
-        actors_line = actors_line.replace('(CONT’D)', '')
-        actors_line = actors_line.replace('(STATEMENT)', '')
-        actors_line = actors_line.strip()
+        actors_line = self._clear_up_actor_line(line)
 
         # split up the line by , and AND
         actors = list()
