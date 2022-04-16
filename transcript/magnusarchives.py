@@ -182,18 +182,14 @@ class MagnusEpisode(object):
         :return: true or false
         """
 
-        if line.lower() == '[the magnus archives theme - intro]' \
-            or line.lower() == '[the magnus archives theme – intro]' \
-                or line.lower() == '[the magnus archives theme – intro]':
-            return True
+        l = line.lower()
 
-        # lets make sure simple spelling errors can be handled
-        if line.lower() == '[the magnus archives theme - into]' \
-            or line.lower() == '[the magnus archives theme – into]' \
-                or line.lower() == '[the magnus archives theme – into]':
-            return True
+        if l.startswith('['):
+            if l.endswith(' intro]') \
+                or l.endswith(' into]'):
+                return True
 
-        return False
+            return False
 
     def _is_theme_outro(self, line: str):
         """
@@ -203,10 +199,11 @@ class MagnusEpisode(object):
         :return: true or false
         """
 
-        if line.lower() == '[the magnus archives theme - outro]' \
-            or line.lower() == '[the magnus archives theme – outro]' \
-                or line.lower() == '[the magnus archives theme – outro]':
-            return True
+        l = line.lower()
+
+        if l.startswith('['):
+            if l.endswith(' outro]'):
+                return True
 
         return False
 
