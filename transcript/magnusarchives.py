@@ -53,7 +53,7 @@ class MagnusTranscriptIndex(object):
             type=dict(
                 type='keyword',
             ),
-            actor=dict(
+            actors=dict(
                 type='keyword',
             ),
             line=dict(
@@ -66,7 +66,7 @@ class MagnusTranscriptLine(object):
     """
         a line in the transcript
     """
-    def __init__(self, episode_number: int, position: int, line: str, ltype: str, actor: str=None):
+    def __init__(self, episode_number: int, position: int, line: str, ltype: str, actors: list=None):
         """
 
         :param position: the position of the line in the transcript
@@ -87,7 +87,7 @@ class MagnusTranscriptLine(object):
 
         self.type = ltype
 
-        self.actor = actor
+        self.actors = actors
 
     def index_document_id(self):
         """
@@ -119,6 +119,13 @@ class MagnusEpisode(object):
         self.actors = list()
         self.lines = list()
 
+        self.paragraphs_to_ignore_in_transcripts = [
+            None,
+            '',
+            '[The Magnus Archives Theme – Intro - Continues]',
+            '[Main Body of Statement]'
+        ]
+
         self._load(doc)
         self._parse()
 
@@ -134,6 +141,121 @@ class MagnusEpisode(object):
         with open(doc, 'rb') as f:
             self.document = Document(f)
 
+    def _is_content_warning(self, line: str):
+        """
+        return true if the line marks the beginning of the content warnings
+
+        :param line:
+        :return: true or false
+        """
+
+        if line.lower() == 'content warnings':
+            return True
+
+        return False
+
+    def _is_theme_intro(self, line: str):
+        """
+        return true if the line is the theme intro line
+
+        :param line:
+        :return: true or false
+        """
+
+        if line.lower() == '[the magnus archives theme - intro]' \
+            or line.lower() == '[the magnus archives theme – intro]' \
+                or line.lower() == '[the magnus archives theme – intro]':
+            return True
+
+        return False
+
+    def _is_theme_outro(self, line: str):
+        """
+        return true if the line is the theme outro line
+
+        :param line:
+        :return: true or false
+        """
+
+        if line.lower() == '[the magnus archives theme - outro]' \
+            or line.lower() == '[the magnus archives theme – outro]' \
+                or line.lower() == '[the magnus archives theme – outro]':
+            return True
+
+        return False
+
+    def _is_sfx_line(self, line: str):
+        """
+        return true if the line is a sfx instruction
+        a sfx instruction starts and ends with [ and ]
+
+        :param line:
+        :return: true or false
+        """
+
+        if line.startswith('[') and line.endswith(']'):
+            return True
+
+        return False
+
+
+
+    def _is_acting_line(self, line: str):
+        """
+        return true if the line is an acting instruction
+        an acting instruction starts and ends with ( and )
+
+        :param line:
+        :return: true or false
+        """
+
+        if line.startswith('(') and line.endswith(')'):
+            return True
+
+        return False
+
+    def _is_actor_line(self, line: str):
+        """
+        return true if the line is an actor line
+        an actor line is usually a line that only contains word characters all in uppercase
+
+        :param line:
+        :return: true or false
+        """
+
+        # check if line isnt empty, check if line is all in uppercase,
+        # ensure no sfx or acting instructions are given
+        if line \
+            and line.isupper() \
+            and not self._is_sfx_line(line) \
+                and not self._is_acting_line(line):
+
+            return True
+
+        return False
+
+    def _get_actors_from_actor_line(self, line: str):
+        """
+        lets split the actor line up. in some transcripts multiple actors are specified
+        i found one occurence with AND, but I also assume we got some , in there ;-)
+
+        :param line: actor line
+        :return: list of actors
+        """
+
+        # strip CONTINUED from the text before checking
+        actors_line = line.replace('(CONTINUED)', '')
+        actors_line = actors_line.replace('(CONT’D)', '')
+        actors_line = actors_line.strip()
+
+        # split up the line by , and AND
+        actors = list()
+        for actors_line_separated_by_comma in actors_line.split(','):
+            for actors_line_separated_by_AND in actors_line_separated_by_comma.strip().split('AND'):
+                actors.append(actors_line_separated_by_AND.strip())
+
+        return actors
+
 
     def _parse(self):
         """
@@ -143,13 +265,6 @@ class MagnusEpisode(object):
 
         :return:
         """
-
-        ignore_paragraphs = [
-            None,
-            '',
-            '[The Magnus Archives Theme – Intro - Continues]',
-            '[Main Body of Statement]'
-        ]
 
         paragraphs = self.document.paragraphs
 
@@ -169,104 +284,116 @@ class MagnusEpisode(object):
         is_content_warning = False
         is_episode_transcript = False
         current_actor = None
+        # store the last type of line when parsing
+        # the transcript to allow better rules
+        # like if last line was actor line (ALL UPPERCASE)
+        # the next line will certainly be a spoken line, independent if its all UPPERCASE again
+        last_line_was = None
 
-        i = 1
-        for p in paragraphs[i:]:
-            txt = p.text
-            logging.debug(f'{i}: {txt}')
+        for p in paragraphs[1:]:
+            # get the paragraph, remove trailing and leading whitespaces
+            paragrah_text = p.text
+            paragrah_text = paragrah_text.strip()
 
-            # ignore paragraphs
-            if txt in ignore_paragraphs:
-                logging.debug(f'ignoring paragraph: {txt}')
-                continue
-
-            # if we stumble over the content warnings label all
-            # upcoming values are content warnings.
-            # this is true until the first [] line - usually the theme song
-            if txt.lower() == 'content warnings':
-                logging.debug('content warning paragraph')
-                is_content_warning = True
-                continue
-
-            # we are inside the episode transcript after the theme music has played
-            # slight differences in chars -, – and – ;-)
-            if txt.lower() == '[the magnus archives theme - intro]' \
-                    or txt.lower() == '[the magnus archives theme – intro]' \
-                    or txt.lower() == '[the magnus archives theme – intro]':
-                logging.debug('theme intro paragraph')
-                is_content_warning = False
-                is_episode_transcript = True
-                continue
-            # and after the outro music we arent inside the content anymore
-            if txt.lower() == '[the magnus archives theme - outro]' \
-                    or txt.lower() == '[the magnus archives theme – outro]' \
-                or txt.lower() == '[the magnus archives theme – outro]':
-                logging.debug('theme outro paragraph')
-                is_episode_transcript = False
-                continue
-
-
-            # with the rules defined we can start to fill in the transcript object
-            # if we are parsing content warnings fill them into the matching list
-            if is_content_warning:
-                self.content_warnings.append(txt)
-                continue
-
-            # if we are "inside" the episode
-            if is_episode_transcript:
-                # if the text is all UPPERCASE we know that that the current line is the ACTOR
-                # and we know that all following lines are spoken by the actor.
-                # except for sfx and acting guidance
-                if txt.isupper():
-                    # strip CONTINUED from the text before checking
-                    a = txt.replace('(CONTINUED)','')
-                    a = a.replace('(CONT’D)','')
-                    a = a.strip()
-                    if a not in self.actors:
-                        self.actors.append(a)
-
-                    # set current actor, to ensure we can assign the transcript lines to the actor
-                    logging.debug(f'actor paragraph {a}')
-                    current_actor = a
+            # as we are dealing with word documents some paragraphs contain
+            # line breaks which hide meta information (e.g. ACTOR\lntext)
+            # to ensure we can properly parse all lines we need to break them up again
+            for txt in paragrah_text.splitlines():
+                # ignore paragraphs
+                if txt in self.paragraphs_to_ignore_in_transcripts:
+                    logging.debug(f'ignoring paragraph: "{txt}"')
                     continue
 
-                # we should be in a place now where we only have "content"
-                # so lets figure out which our current position in the transcript is
-                # to ensure we have the correct ordering in place
-                line_position = len(self.lines) + 1 if len(self.lines) > 0 else 0
+                # if we stumble over the content warnings label all
+                # upcoming values are content warnings.
+                # this is true until the first [] line - usually the theme song
+                if self._is_content_warning(txt):
+                    logging.debug(f'content warning paragraph')
+                    is_content_warning = True
+                    continue
 
-                # if the line starts and ends with [ and ] its an sfx instruction
-                if txt.startswith('[') and txt.endswith(']'):
+                # we are inside the episode transcript after the theme music has played
+                # slight differences in chars -, – and – ;-)
+                if self._is_theme_intro(txt):
+                    logging.debug(f'theme intro paragraph')
+                    is_content_warning = False
+                    is_episode_transcript = True
+                    continue
+
+                # and after the outro music we aren't inside the content anymore
+                if self._is_theme_outro(txt):
+                    logging.debug(f'theme outro paragraph')
+                    is_episode_transcript = False
+                    continue
+
+                # with the rules defined we can start to fill in the transcript object
+                # if we are parsing content warnings fill them into the matching list
+                if is_content_warning:
+                    self.content_warnings.append(txt)
+                    continue
+
+                # if we are "inside" the episode
+                if is_episode_transcript:
+                    logging.debug(f'"{txt}"')
+
+                    # if the text is all UPPERCASE we assume we have an actor line
+                    # now there are a few exceptions, of course ;-)
+                    # first: in some transcripts sfx and acting instructions are all in UPPERCASE, we need to filter them out too
+                    # second: in some transcripts different newlines are used, so we need to split these lines up
+                    # third: in some transcripts multiple actors are specified, so we need to split those up
+                    # fourth: in some transcripts the spoken line by the actor is also in all UPPERCASE so we need to make sure to ignore these
+                    if self._is_actor_line(txt) and last_line_was != 'actor':
+
+                        current_actors = self._get_actors_from_actor_line(txt)
+                        for a in current_actors:
+                            if a not in self.actors:
+                                self.actors.append(a)
+
+                        # set current actor, to ensure we can assign the transcript lines to the actor
+                        logging.debug(f'actor paragraph: "{current_actors}"')
+                        last_line_was = 'actor'
+                        continue
+
+                    # we should be in a place now where we only have "content"
+                    # so lets figure out which our current position in the transcript is
+                    # to ensure we have the correct ordering in place
+                    line_position = len(self.lines) + 1 if len(self.lines) > 0 else 0
+
+                    # if the line starts and ends with [ and ] its an sfx instruction
+                    if self._is_sfx_line(txt):
+                        logging.debug(f'sfx paragraph: "{txt}"')
+                        self.lines.append(MagnusTranscriptLine(
+                            episode_number=self.episode_number,
+                            position=line_position,
+                            line=txt,
+                            ltype='sfx'
+                        ))
+                        last_line_was = 'sfx'
+                        continue
+
+                    # if the line starts and ends with ( and ) its an acting instruction
+                    if self._is_acting_line(txt):
+                        self.lines.append(MagnusTranscriptLine(
+                            episode_number=self.episode_number,
+                            position=line_position,
+                            line=txt,
+                            ltype='acting',
+                            actors=current_actors
+                        ))
+                        last_line_was = 'acting'
+                        continue
+
+                    # and everything that isn't filtered out yet should be
+                    # the spoken lines by the actors
                     self.lines.append(MagnusTranscriptLine(
                         episode_number=self.episode_number,
                         position=line_position,
                         line=txt,
-                        ltype='sfx'
+                        ltype='speaking',
+                        actors=current_actors
                     ))
-                    continue
+                    last_line_was = 'speaking'
 
-                # if the line starts and ends with ( and ) its an acting instruction
-                if txt.startswith('(') and txt.endswith(')'):
-                    self.lines.append(MagnusTranscriptLine(
-                        episode_number=self.episode_number,
-                        position=line_position,
-                        line=txt,
-                        ltype='acting',
-                        actor=current_actor
-                    ))
-                    continue
-
-                # and everything that isnt filtered out yet should be
-                # the spoken lines by the actors
-                self.lines.append(MagnusTranscriptLine(
-                    episode_number=self.episode_number,
-                    position=line_position,
-                    line=txt,
-                    ltype='speaking',
-                    actor=current_actor
-                ))
-
-            i += 1
 
     def index_document_id(self):
         """
