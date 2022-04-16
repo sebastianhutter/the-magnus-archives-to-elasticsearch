@@ -196,6 +196,12 @@ class MagnusEpisode(object):
         if line.startswith('[') and line.endswith(']'):
             return True
 
+        # in some cases we got char errors, damn you keyboard layouts ;-)
+        if line.startswith('{') and line.endswith(']'):
+            return True
+        if line.startswith('[') and line.endswith('}'):
+            return True
+
         return False
 
 
