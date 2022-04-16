@@ -209,6 +209,20 @@ class MagnusEpisode(object):
 
         return False
 
+    def _is_creative_commons_license_line(self, line: str):
+        """
+        return true if the line is the creative commons license line
+
+        :param line:
+        :return: true or false
+        """
+
+        if line.lower().startswith('the magnus archives is a podcast distributed by rusty quill and licensed under a creative commons attribution '
+                                   'non-commercial sharealike 4.0 international licence'):
+            return True
+
+        return False
+
     def _is_sfx_line(self, line: str):
         """
         return true if the line is a sfx instruction
@@ -370,6 +384,14 @@ class MagnusEpisode(object):
                 # and after the outro music we aren't inside the content anymore
                 if self._is_theme_outro(txt):
                     logging.debug(f'theme outro paragraph')
+                    is_episode_transcript = False
+                    continue
+
+                # in some transcripts the theme outro line is missing. but what should always be there is the license
+                # attribution. we don't really require the information for some data experiments. so we make sure
+                # to drop out here
+                if self._is_creative_commons_license_line(txt):
+                    logging.debug(f'creative commons license paragraph')
                     is_episode_transcript = False
                     continue
 
