@@ -186,8 +186,9 @@ class MagnusEpisode(object):
 
         if l.startswith('['):
             if l.endswith(' intro]') \
-                or l.endswith(' into]'):
-                return True
+                or l.endswith(' -intro]') \
+                    or l.endswith(' into]'):
+                    return True
 
             return False
 
@@ -202,7 +203,8 @@ class MagnusEpisode(object):
         l = line.lower()
 
         if l.startswith('['):
-            if l.endswith(' outro]'):
+            if l.endswith(' outro]') \
+                or l.endswith(' -outro]'):
                 return True
 
         return False
