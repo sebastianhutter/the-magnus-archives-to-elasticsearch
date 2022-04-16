@@ -2,6 +2,7 @@ from docx import Document
 import logging
 import re
 
+
 class MagnusEpisodeIndex(object):
     """
         define the elasticsearch index for magnus archive episodes
@@ -38,6 +39,7 @@ class MagnusEpisodeIndex(object):
         ),
     )
 
+
 class MagnusTranscriptIndex(object):
     """
         define the elasticsearch index for magnus transcripts
@@ -73,6 +75,7 @@ class MagnusTranscriptIndex(object):
             ),
         ),
     )
+
 
 class MagnusTranscriptLine(object):
     """
