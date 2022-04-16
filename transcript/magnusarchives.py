@@ -161,7 +161,7 @@ class MagnusEpisode(object):
         :return: true or false
         """
 
-        if line.lower() == 'content warnings':
+        if line.lower().startswith('content warnings'):
             return True
 
         return False
