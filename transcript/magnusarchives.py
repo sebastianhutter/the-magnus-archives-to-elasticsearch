@@ -332,7 +332,6 @@ class MagnusEpisode(object):
             # line breaks which hide meta information (e.g. ACTOR\lntext)
             # to ensure we can properly parse all lines we need to break them up again
             for txt in paragrah_text.splitlines():
-                print(txt)
                 # ignore paragraphs
                 if txt in self.paragraphs_to_ignore_in_transcripts:
                     logging.debug(f'ignoring paragraph: "{txt}"')
