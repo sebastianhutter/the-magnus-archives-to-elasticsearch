@@ -174,6 +174,15 @@ class MagnusEpisode(object):
 
         return False
 
+    def _get_content_warning_from_line(self, line: str):
+        """
+        return a content warning from the given line
+        :param line:
+        :return:
+        """
+
+        return line.replace('- ', '')
+
     def _is_theme_intro(self, line: str):
         """
         return true if the line is the theme intro line
@@ -412,7 +421,7 @@ class MagnusEpisode(object):
                 # if we are parsing content warnings fill them into the matching list
                 if is_content_warning:
                     # the replace removes potential leading list signs, like in season 01 e34
-                    self.content_warnings.append(txt.replace('- ', ''))
+                    self.content_warnings.append(self._get_content_warning_from_line(txt))
                     continue
 
                 # if we are "inside" the episode
