@@ -270,6 +270,7 @@ class MagnusEpisode(object):
         actors_line = line.replace('(CONTINUED)', '')
         actors_line = actors_line.replace('(CONT’D)', '')
         actors_line = actors_line.replace('(CONT\'D)', '')
+        actors_line = actors_line.replace('(CON’T)', '')
         actors_line = actors_line.replace('(STATEMENT)', '')
         actors_line = actors_line.replace('(BACKGROUND)', '')
         actors_line = actors_line.replace('(Cont.)', '')
