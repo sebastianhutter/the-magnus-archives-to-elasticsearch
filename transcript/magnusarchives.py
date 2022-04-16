@@ -365,7 +365,8 @@ class MagnusEpisode(object):
                 # with the rules defined we can start to fill in the transcript object
                 # if we are parsing content warnings fill them into the matching list
                 if is_content_warning:
-                    self.content_warnings.append(txt)
+                    # the replace removes potential leading list signs, like in season 01 e34
+                    self.content_warnings.append(txt.replace('- ', ''))
                     continue
 
                 # if we are "inside" the episode
