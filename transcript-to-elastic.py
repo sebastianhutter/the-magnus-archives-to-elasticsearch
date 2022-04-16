@@ -7,13 +7,17 @@ import os
 from transcript import MagnusEpisode, MagnusEpisodeIndex, MagnusTranscriptIndex
 from es import ElasticManagement, KibanaManagement
 
-def initialize_elasticsearch():
+def initialize_elasticsearch(recreate_indices: bool):
     """
     setup elasticsearch indices
     :return:
     """
     em = ElasticManagement()
 
+    if recreate_indices:
+        # delete indexes
+        em.delete_index(index_name=MagnusEpisodeIndex.index_name)
+        em.delete_index(index_name=MagnusTranscriptIndex.index_name)
     # create indices
     em.create_index(index_name=MagnusEpisodeIndex.index_name, mappings=MagnusEpisodeIndex.index_mappings, settings=MagnusEpisodeIndex.index_settings)
     em.create_index(index_name=MagnusTranscriptIndex.index_name, mappings=MagnusTranscriptIndex.index_mappings, settings=MagnusTranscriptIndex.index_settings)
@@ -83,7 +87,16 @@ def index_episode(episode: MagnusEpisode):
     help="The loglevel for the script execution",
     show_default=True
 )
-def run(path, loglevel):
+@click.option(
+    '--recreate-indices',
+    required=False,
+    envvar='RECREATE_INDICES',
+    is_flag=True,
+    default=False,
+    help="Delete and create elasticsearch indices before importing transcripts?",
+    show_default=True
+)
+def run(path, loglevel, recreate_indices):
     """
     setup elasticsearch and run indexing for a single document or folder
 
@@ -96,8 +109,9 @@ def run(path, loglevel):
     logging.getLogger('elastic_transport.transport').setLevel(logging.ERROR)
     logging.getLogger('urllib3.connectionpool').setLevel(logging.ERROR)
 
-    initialize_elasticsearch()
+    initialize_elasticsearch(recreate_indices=recreate_indices)
     initialize_kibana()
+
 
     # if the given filename is a folder,
     # loop over all files in the folder,

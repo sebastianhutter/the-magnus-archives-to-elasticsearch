@@ -39,6 +39,20 @@ class ElasticManagement(object):
             ignore=400
         )
 
+    def delete_index(self, index_name: str):
+        """
+        delete the given index
+        :param index_name: name of the index to delete
+        :return:
+        """
+
+        logging.debug(f'Delete index {index_name}')
+        self.client.indices.delete(
+            index=index_name,
+            # ignore index not found
+            ignore=404
+        )
+
     def feed_index(self, index_name: str, data: dict, id: str=None):
         """
         feeed the given index with the given data
