@@ -34,6 +34,8 @@ def initialize_kibana_for_magnus_archives(host: str, recreate_kibana_views: bool
 
     km.create_index_pattern(title=MagnusTranscriptIndex.index_name)
 
+    km.import_dashboard(ndjson=MagnusTranscriptIndex.kibana_dashboard)
+
 def get_files_to_parse(path: str):
     """
     check if the given path is a file or a folder

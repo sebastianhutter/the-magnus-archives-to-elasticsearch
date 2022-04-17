@@ -1,4 +1,6 @@
 import logging
+import tempfile
+
 import requests
 import time
 
@@ -75,3 +77,31 @@ class KibanaManagement(object):
         except requests.exceptions.RequestException as e:
             if not e.response.status_code == 404:
                 raise e
+
+    def import_dashboard(self, ndjson: str):
+        """
+        import the given dashboard ndjson
+
+        :param ndjson:
+        :return:
+        """
+
+        # temporary store the file on the filesystem so we can pass it as a fileobject
+        # to requests
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".ndjson") as fp:
+                fp.write(ndjson.encode())
+                fp.seek(0)
+
+                r = requests.post(
+                    url=f'{self.host}/api/saved_objects/_import',
+                    headers=self.headers,
+                    params=dict(overwrite=True),
+                    files=dict(file=fp),
+                )
+                r.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logging.error(r.text)
+            raise e
+        except BaseException as e:
+            raise e
