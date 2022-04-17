@@ -129,6 +129,7 @@ def run(path, loglevel, recreate_indices, recreate_kibana_views, show):
     logging.basicConfig(level=loglevel)
     # we dont want to spam the log if set to debug or info!
     logging.getLogger('elastic_transport.transport').setLevel(logging.ERROR)
+    logging.getLogger('elastic_transport.node_pool').setLevel(logging.ERROR)
     logging.getLogger('urllib3.connectionpool').setLevel(logging.ERROR)
 
     # get all files to parse,

@@ -1,3 +1,5 @@
+import time
+
 from elasticsearch import Elasticsearch
 import logging
 import json
@@ -19,8 +21,14 @@ class ElasticManagement(object):
             hosts=[self.host]
         )
 
-        if not self.client.ping():
+        fail_counter = 0
+        while not self.client.ping():
+            if fail_counter >= 10:
+                raise ConnectionError(f'Unable to connect to elasticsearch {self.host} after {fail_counter} retries.')
             logging.warning(f'Unable to ping elasticsearch host {self.host}')
+            fail_counter += 1
+            time.sleep(5)
+
 
     def create_index(self, index_name: str, mappings: dict, settings: dict):
         """
