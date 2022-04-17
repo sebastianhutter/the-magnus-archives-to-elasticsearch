@@ -11,6 +11,11 @@ class KibanaManagement(object):
 
 
     def create_index_pattern(self, title: str):
+        """
+        create the given index pattern
+        :param title:
+        :return:
+        """
 
         try:
             r = requests.post(
@@ -20,7 +25,8 @@ class KibanaManagement(object):
                     override=False,
                     refresh_fields=True,
                     index_pattern=dict(
-                        title=title
+                        title=title,
+                        id=title
                     )
                 ),
             )
@@ -30,3 +36,20 @@ class KibanaManagement(object):
             if 'Duplicate index pattern' not in r.text:
                 raise e
 
+    def delete_index_pattern(self, title: str):
+        """
+        delete the given index pattern
+        :param title:
+        :return:
+        """
+
+        try:
+            r = requests.delete(
+                url=f'{self.host}/api/index_patterns/index_pattern/{title}',
+                headers=self.headers,
+            )
+            r.raise_for_status()
+
+        except requests.exceptions.RequestException as e:
+            if not e.response.status_code == 404:
+                raise e

@@ -19,18 +19,21 @@ def initialize_elasticsearch_for_magnus_archives(recreate_indices: bool):
         # delete indexes
         em.delete_index(index_name=MagnusEpisodeIndex.index_name)
         em.delete_index(index_name=MagnusTranscriptIndex.index_name)
+
     # create indices
     em.create_index(index_name=MagnusEpisodeIndex.index_name, mappings=MagnusEpisodeIndex.index_mappings, settings=MagnusEpisodeIndex.index_settings)
     em.create_index(index_name=MagnusTranscriptIndex.index_name, mappings=MagnusTranscriptIndex.index_mappings, settings=MagnusTranscriptIndex.index_settings)
 
-def initialize_kibana_for_magnus_archives():
+def initialize_kibana_for_magnus_archives(recreate_kibana_views: bool):
     """
     setup kibana data views
     :return:
     """
     km = KibanaManagement()
 
-    km.create_index_pattern(title=MagnusEpisodeIndex.index_name)
+    if recreate_kibana_views:
+        km.delete_index_pattern(title=MagnusTranscriptIndex.index_name)
+
     km.create_index_pattern(title=MagnusTranscriptIndex.index_name)
 
 def get_files_to_parse(path: str):
@@ -103,6 +106,15 @@ def index_episode_for_magnus_archives(episode: MagnusEpisode):
     show_default=True
 )
 @click.option(
+    '--recreate-kibana-views',
+    required=False,
+    envvar='RECREATE_KIBANA_VIEWS',
+    is_flag=True,
+    default=False,
+    help="Delete and create kibana views?",
+    show_default=True
+)
+@click.option(
     '--show',
     required=True,
     envvar='SHOW',
@@ -111,7 +123,7 @@ def index_episode_for_magnus_archives(episode: MagnusEpisode):
     help='Transcripts are parsed for which show?',
     show_default=True
 )
-def run(path, loglevel, recreate_indices, show):
+def run(path, loglevel, recreate_indices, recreate_kibana_views, show):
     """
     setup elasticsearch and run indexing for a single document or folder
 
@@ -135,7 +147,7 @@ def run(path, loglevel, recreate_indices, show):
     # at the moment the script only supports magnus archive. but better be prepared!
     if show == 'magnus':
         initialize_elasticsearch_for_magnus_archives(recreate_indices=recreate_indices)
-        initialize_kibana_for_magnus_archives()
+        initialize_kibana_for_magnus_archives(recreate_kibana_views=recreate_kibana_views)
 
         for f in files_to_parse:
             try:
