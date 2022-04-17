@@ -4,46 +4,6 @@ import logging
 import re
 
 
-class MagnusEpisodeIndex(object):
-    """
-        define the elasticsearch index for magnus archive episodes
-        the episode index contains metadata of the episode
-        a second index will contain the transcript itself
-    """
-
-    index_name = 'the_magnus_archives_episodes'
-    index_settings = dict(
-        index=dict(
-            number_of_replicas=0,
-            number_of_shards=1,
-            sort=dict(
-                field=['episode_number'],
-                order=['asc']
-            )
-        )
-    )
-    index_mappings = dict(
-        properties=dict(
-            episode_number=dict(
-                type='short',
-            ),
-            episode_title=dict(
-                type='text',
-            ),
-            filename=dict(
-                type='text',
-            ),
-            content_warnings=dict(
-                type='keyword',
-            ),
-            # can we get the actors from the lines, so we dont duplicate info in the index?
-            actors=dict(
-                type='keyword',
-            ),
-        ),
-    )
-
-
 class MagnusTranscriptIndex(object):
     """
         define the elasticsearch index for magnus transcripts
@@ -65,13 +25,22 @@ class MagnusTranscriptIndex(object):
             episode_number=dict(
                 type='short',
             ),
+            episode_title=dict(
+                type='text',
+            ),
+            filename=dict(
+                type='text',
+            ),
+            content_warnings=dict(
+                type='keyword',
+            ),
             position=dict(
                 type='short',
             ),
             type=dict(
                 type='keyword',
             ),
-            actors=dict(
+            characters=dict(
                 type='keyword',
             ),
             line=dict(
@@ -85,7 +54,7 @@ class MagnusTranscriptLine(object):
     """
         a line in the transcript
     """
-    def __init__(self, episode_number: int, position: int, line: str, ltype: str, actors: list=None):
+    def __init__(self, position: int, line: str, ltype: str, characters: list=None):
         """
 
         :param position: the position of the line in the transcript
@@ -94,7 +63,6 @@ class MagnusTranscriptLine(object):
         :param actor: the actor speaking the line or doing the instruction
         """
 
-        self.episode_number = episode_number
         self.position = position
 
         self.line = line
@@ -106,24 +74,7 @@ class MagnusTranscriptLine(object):
 
         self.type = ltype
 
-        self.actors = actors
-
-    def index_document_id(self):
-        """
-        return the id for the elasticsearch document
-        :return:
-        """
-        return f'{self.episode_number}-{self.position}'
-
-    # thats not very neat, as it relays on setting the correct fields here and in the index object
-    # something like marhsmallow would be neater ... but good enough for now
-    def index_document(self):
-        """
-        returns the content of the object in a format usable by es
-        :return: dict with index object fields
-        """
-
-        return self.__dict__
+        self.characters = characters
 
 
 class MagnusEpisode(object):
@@ -135,7 +86,6 @@ class MagnusEpisode(object):
 
         # placeholder values to fill in during parsing
         self.content_warnings = list()
-        self.actors = list()
         self.lines = list()
         self.filename = os.path.basename(doc)
 
@@ -460,9 +410,6 @@ class MagnusEpisode(object):
                     # fourth: in some transcripts the spoken line by the actor is also in all UPPERCASE so we need to make sure to ignore these
                     if self._is_actor_line(txt) and last_line_was != 'actor':
                         current_actors = self._get_actors_from_actor_line(txt)
-                        for a in current_actors:
-                            if a not in self.actors:
-                                self.actors.append(a)
 
                         # set current actor, to ensure we can assign the transcript lines to the actor
                         logging.debug(f'actor paragraph: "{current_actors}"')
@@ -478,7 +425,6 @@ class MagnusEpisode(object):
                     if self._is_sfx_line(txt):
                         logging.debug(f'sfx paragraph: "{txt}"')
                         self.lines.append(MagnusTranscriptLine(
-                            episode_number=self.episode_number,
                             position=line_position,
                             line=txt,
                             ltype='sfx'
@@ -489,11 +435,10 @@ class MagnusEpisode(object):
                     # if the line starts and ends with ( and ) its an acting instruction
                     if self._is_acting_line(txt):
                         self.lines.append(MagnusTranscriptLine(
-                            episode_number=self.episode_number,
                             position=line_position,
                             line=txt,
                             ltype='acting',
-                            actors=current_actors
+                            characters=current_actors
                         ))
                         last_line_was = 'acting'
                         continue
@@ -501,36 +446,34 @@ class MagnusEpisode(object):
                     # and everything that isn't filtered out yet should be
                     # the spoken lines by the actors
                     self.lines.append(MagnusTranscriptLine(
-                        episode_number=self.episode_number,
                         position=line_position,
                         line=txt,
                         ltype='speaking',
-                        actors=current_actors
+                        characters=current_actors
                     ))
                     last_line_was = 'speaking'
 
 
-    def index_document_id(self):
+    def get_transcript_lines_for_index(self):
         """
-        return the id for the elasticsearch document
+        return all transcript lines ready for the index
+        :param i: transcript line array position
         :return:
         """
-        return self.episode_number
 
-    # thats not very neat, as it relays on setting the correct fields here and in the index object
-    # something like marhsmallow would be neater ... but good enough for now
-    def index_document(self):
-        """
-        returns the content of the object in a format usable by es
-        :return: dict with index object fields
-        """
+        lines_for_index = list()
+        for line in self.lines:
+            # get the object data as dictionary and extend it with
+            # general information about the episode
+            l = line.__dict__
+            l['episode_number'] = self.episode_number
+            l['episode_title'] = self.episode_title
+            l['filename'] = self.filename
+            l['content_warnings'] = self.content_warnings
 
-        return dict(
-            episode_number=self.episode_number,
-            episode_title=self.episode_title,
-            content_warnings=self.content_warnings,
-            actors=self.actors,
-            filename=self.filename
-        )
+            lines_for_index.append(dict(
+                document_id=f'{self.episode_number}-{line.position}',
+                document=l
+            ))
 
-    
+        return lines_for_index

@@ -1,1 +1,1 @@
-from .magnusarchives import MagnusEpisode, MagnusEpisodeIndex, MagnusTranscriptIndex
+from .magnusarchives import MagnusEpisode, MagnusTranscriptIndex

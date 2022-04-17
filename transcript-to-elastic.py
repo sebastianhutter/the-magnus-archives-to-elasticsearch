@@ -5,7 +5,7 @@ import logging
 import os
 import glob
 
-from transcript import MagnusEpisode, MagnusEpisodeIndex, MagnusTranscriptIndex
+from transcript import MagnusEpisode, MagnusTranscriptIndex
 from es import ElasticManagement, KibanaManagement
 
 def initialize_elasticsearch_for_magnus_archives(recreate_indices: bool):
@@ -17,11 +17,9 @@ def initialize_elasticsearch_for_magnus_archives(recreate_indices: bool):
 
     if recreate_indices:
         # delete indexes
-        em.delete_index(index_name=MagnusEpisodeIndex.index_name)
         em.delete_index(index_name=MagnusTranscriptIndex.index_name)
 
     # create indices
-    em.create_index(index_name=MagnusEpisodeIndex.index_name, mappings=MagnusEpisodeIndex.index_mappings, settings=MagnusEpisodeIndex.index_settings)
     em.create_index(index_name=MagnusTranscriptIndex.index_name, mappings=MagnusTranscriptIndex.index_mappings, settings=MagnusTranscriptIndex.index_settings)
 
 def initialize_kibana_for_magnus_archives(recreate_kibana_views: bool):
@@ -74,12 +72,9 @@ def index_episode_for_magnus_archives(episode: MagnusEpisode):
 
     em = ElasticManagement()
 
-    # create or update entry in episode index
-    em.feed_index(index_name=MagnusEpisodeIndex.index_name, data=episode.index_document(), id=episode.index_document_id())
-
     # add all transcript lines to the transcript index
-    for l in episode.lines:
-        em.feed_index(index_name=MagnusTranscriptIndex.index_name, data=l.index_document(), id=l.index_document_id())
+    for l in episode.get_transcript_lines_for_index():
+        em.feed_index(index_name=MagnusTranscriptIndex.index_name, data=l.get('document'), id=l.get('document_id'))
 
 @click.command()
 @click.argument(
