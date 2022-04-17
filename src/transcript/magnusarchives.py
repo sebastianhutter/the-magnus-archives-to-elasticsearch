@@ -69,6 +69,10 @@ class MagnusTranscriptIndex(object):
     {"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":7,"missingRefCount":0,"missingReferences":[]}
     '''
 
+    # the default route for the kibana dashboard,
+    # points to the magnus archives dashboard
+    kibana_default_route = '/app/dashboards#/view/32c54d50-be13-11ec-81b2-97a6366f6ba6'
+
 class MagnusTranscriptLine(object):
     """
         a line in the transcript

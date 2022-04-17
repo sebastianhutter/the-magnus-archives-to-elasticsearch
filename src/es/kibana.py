@@ -34,6 +34,35 @@ class KibanaManagement(object):
 
         return True
 
+    def _get_version(self):
+        """
+        return the kibana version
+        :return:
+        """
+
+        r = requests.get(f'{self.host}/api/status')
+        r.raise_for_status()
+
+        return r.json()['version']['number']
+
+    def set_default_route(self, path: str):
+        """
+        set the kibana default route
+        :param path:
+        :return:
+        """
+
+        r = requests.put(
+            url=f'{self.host}/api/saved_objects/config/{self._get_version()}',
+            headers=self.headers,
+            json=dict(
+                attributes=dict(
+                    defaultRoute=path
+                )
+            ),
+        )
+        r.raise_for_status()
+
     def create_index_pattern(self, title: str):
         """
         create the given index pattern
