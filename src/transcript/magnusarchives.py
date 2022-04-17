@@ -48,6 +48,12 @@ class MagnusTranscriptIndex(object):
             ),
             line=dict(
                 type='text',
+                fields=dict(
+                    length=dict(
+                        type="token_count",
+                        analyzer="english"
+                    )
+                )
             ),
         ),
     )
