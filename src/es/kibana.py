@@ -1,5 +1,6 @@
 import logging
 import requests
+import time
 
 class KibanaManagement(object):
 
@@ -9,6 +10,27 @@ class KibanaManagement(object):
             'kbn-xsrf': 'reporting'
         }
 
+        fail_counter = 0
+        while not self._ping():
+            if fail_counter >= 10:
+                raise ConnectionError(f'Unable to connect to kibana {self.host} after {fail_counter} retries.')
+            logging.warning(f'Unable to ping kibana host {self.host}')
+            fail_counter += 1
+            time.sleep(5)
+
+    def _ping(self):
+        """
+        simple "ping" for kibana to make waiting for working kibana easy
+        :return:
+        """
+
+        try:
+            r = requests.get(f'{self.host}/api/data_views/default')
+            r.raise_for_status()
+        except BaseException:
+            return False
+
+        return True
 
     def create_index_pattern(self, title: str):
         """
