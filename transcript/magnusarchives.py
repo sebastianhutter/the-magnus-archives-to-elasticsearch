@@ -22,6 +22,9 @@ class MagnusTranscriptIndex(object):
     )
     index_mappings = dict(
         properties=dict(
+            season=dict(
+                type='byte'
+            ),
             episode_number=dict(
                 type='short',
             ),
@@ -110,6 +113,33 @@ class MagnusEpisode(object):
         logging.info(f'Load transcript doc {doc}')
         with open(doc, 'rb') as f:
             self.document = Document(f)
+
+    def _get_season_from_episode(self):
+        """
+        depending on the epsiode number we return a different season.
+        episode 1-40: season 1
+        episode 41-80: season 2
+        episode 81-120: season 3
+        episode 121-160: season 4
+        episode 161-200: season 5
+
+        :return: season number
+        """
+
+        n = int(self.episode_number)
+
+        if n < 41:
+            return 1
+        if n < 81:
+            return 2
+        if n < 121:
+            return 3
+        if n < 161:
+            return 4
+        if n < 201:
+            return 5
+
+        raise ValueError(f'Unable to get season from episode number {self.episode_number}')
 
     def _is_content_warning(self, line: str):
         """
@@ -315,6 +345,9 @@ class MagnusEpisode(object):
         self.episode_title = match.group('title')
         self.episode_number = match.group('number')
 
+        # depending on the epside number we set the season field
+        self.season = self._get_season_from_episode()
+
         # now we loop trough all the paragraphs and load the different values
         # depending on some content rules
         is_content_warning = False
@@ -466,6 +499,7 @@ class MagnusEpisode(object):
             # get the object data as dictionary and extend it with
             # general information about the episode
             l = line.__dict__
+            l['season'] = self.season
             l['episode_number'] = self.episode_number
             l['episode_title'] = self.episode_title
             l['filename'] = self.filename
