@@ -8,12 +8,12 @@ import glob
 from transcript import MagnusEpisode, MagnusTranscriptIndex
 from es import ElasticManagement, KibanaManagement
 
-def initialize_elasticsearch_for_magnus_archives(recreate_indices: bool):
+def initialize_elasticsearch_for_magnus_archives(host: str, recreate_indices: bool):
     """
     setup elasticsearch indices
     :return:
     """
-    em = ElasticManagement()
+    em = ElasticManagement(host=host)
 
     if recreate_indices:
         # delete indexes
@@ -22,12 +22,12 @@ def initialize_elasticsearch_for_magnus_archives(recreate_indices: bool):
     # create indices
     em.create_index(index_name=MagnusTranscriptIndex.index_name, mappings=MagnusTranscriptIndex.index_mappings, settings=MagnusTranscriptIndex.index_settings)
 
-def initialize_kibana_for_magnus_archives(recreate_kibana_views: bool):
+def initialize_kibana_for_magnus_archives(host: str, recreate_kibana_views: bool):
     """
     setup kibana data views
     :return:
     """
-    km = KibanaManagement()
+    km = KibanaManagement(host=host)
 
     if recreate_kibana_views:
         km.delete_index_pattern(title=MagnusTranscriptIndex.index_name)
@@ -63,14 +63,14 @@ def parse_file_for_magnus_archives(path: str):
 
     return MagnusEpisode(doc=path)
 
-def index_episode_for_magnus_archives(episode: MagnusEpisode):
+def index_episode_for_magnus_archives(host: str, episode: MagnusEpisode):
     """
     send episode to elasitcsearch
     :param episode:
     :return:
     """
 
-    em = ElasticManagement()
+    em = ElasticManagement(host=host)
 
     # add all transcript lines to the transcript index
     for l in episode.get_transcript_lines_for_index():
@@ -118,7 +118,23 @@ def index_episode_for_magnus_archives(episode: MagnusEpisode):
     help='Transcripts are parsed for which show?',
     show_default=True
 )
-def run(path, loglevel, recreate_indices, recreate_kibana_views, show):
+@click.option(
+    '--elasticsearch-url',
+    required=True,
+    envvar='ES_URL',
+    default='http://localhost:9200',
+    help='The elasticsearch url used by the script to send data',
+    show_default=True
+)
+@click.option(
+    '--kibana-url',
+    required=True,
+    envvar='KB_URL',
+    default='http://localhost:5601',
+    help='The elasticsearch url used by the script to send data',
+    show_default=True
+)
+def run(path, loglevel, recreate_indices, recreate_kibana_views, show, elasticsearch_url, kibana_url):
     """
     setup elasticsearch and run indexing for a single document or folder
 
@@ -142,13 +158,13 @@ def run(path, loglevel, recreate_indices, recreate_kibana_views, show):
     # depending on the show we may use different setup and parsing functions
     # at the moment the script only supports magnus archive. but better be prepared!
     if show == 'magnus':
-        initialize_elasticsearch_for_magnus_archives(recreate_indices=recreate_indices)
-        initialize_kibana_for_magnus_archives(recreate_kibana_views=recreate_kibana_views)
+        initialize_elasticsearch_for_magnus_archives(recreate_indices=recreate_indices, host=elasticsearch_url)
+        initialize_kibana_for_magnus_archives(recreate_kibana_views=recreate_kibana_views, host=kibana_url)
 
         for f in files_to_parse:
             try:
                 parsed_file = parse_file_for_magnus_archives(f)
-                index_episode_for_magnus_archives(parsed_file)
+                index_episode_for_magnus_archives(episode=parsed_file, host=elasticsearch_url)
             except BaseException as e:
                 logging.warning(f'Unable to parse or index document {f}: {e}')
 
