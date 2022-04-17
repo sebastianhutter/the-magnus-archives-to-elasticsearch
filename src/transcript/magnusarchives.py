@@ -391,7 +391,7 @@ class MagnusEpisode(object):
         # store the last type of line when parsing
         # the transcript to allow better rules
         # like if last line was actor line (ALL UPPERCASE)
-        # the next line will certainly be a spoken line, independent if its all UPPERCASE again
+        # the next line will certainly be a spoken line, independent if it's all UPPERCASE again
         last_line_was = None
 
         for p in paragraphs[1:]:
@@ -417,7 +417,6 @@ class MagnusEpisode(object):
                     continue
 
                 # we are inside the episode transcript after the theme music has played
-                # slight differences in chars -, – and – ;-)
                 if self._is_theme_intro(txt):
                     logging.debug(f'theme intro paragraph')
                     is_content_warning = False
@@ -452,7 +451,7 @@ class MagnusEpisode(object):
                 # the current legacy transcripts for season 02 available for download
                 # don't contain any content warnings nor an intro paragraph.
                 # the season 02 transcripts contain the word "case \d\d\d\d" in the episode
-                # title. if we find this one and we have a sfx line ([CLICK]) then we assume we are inside
+                # title. if we find this one, and we have a sfx line ([CLICK]) then we assume we are inside
                 # the episode transcript
                 if self._is_legacy_transcript(self.episode_title) \
                         and self._is_sfx_line(txt):
@@ -462,7 +461,6 @@ class MagnusEpisode(object):
                 # with the rules defined we can start to fill in the transcript object
                 # if we are parsing content warnings fill them into the matching list
                 if is_content_warning:
-                    # the replace removes potential leading list signs, like in season 01 e34
                     self.content_warnings.append(self._get_content_warning_from_line(txt))
                     continue
 
@@ -473,9 +471,8 @@ class MagnusEpisode(object):
                     # if the text is all UPPERCASE we assume we have an actor line
                     # now there are a few exceptions, of course ;-)
                     # first: in some transcripts sfx and acting instructions are all in UPPERCASE, we need to filter them out too
-                    # second: in some transcripts different newlines are used, so we need to split these lines up
-                    # third: in some transcripts multiple actors are specified, so we need to split those up
-                    # fourth: in some transcripts the spoken line by the actor is also in all UPPERCASE so we need to make sure to ignore these
+                    # second: in some transcripts multiple actors are specified, so we need to split those up
+                    # third: in some transcripts the spoken line by the actor is also in all UPPERCASE, so we need to make sure to ignore these
                     if self._is_actor_line(txt) and last_line_was != 'actor':
                         current_actors = self._get_actors_from_actor_line(txt)
 
@@ -489,7 +486,7 @@ class MagnusEpisode(object):
                     # to ensure we have the correct ordering in place
                     line_position = len(self.lines) + 1 if len(self.lines) > 0 else 1
 
-                    # if the line starts and ends with [ and ] its an sfx instruction
+                    # if the line starts and ends with [ and ] it's a sfx instruction
                     if self._is_sfx_line(txt):
                         logging.debug(f'sfx paragraph: "{txt}"')
                         self.lines.append(MagnusTranscriptLine(
@@ -500,7 +497,7 @@ class MagnusEpisode(object):
                         last_line_was = 'sfx'
                         continue
 
-                    # if the line starts and ends with ( and ) its an acting instruction
+                    # if the line starts and ends with ( and ) it's an acting instruction
                     if self._is_acting_line(txt):
                         self.lines.append(MagnusTranscriptLine(
                             position=line_position,
