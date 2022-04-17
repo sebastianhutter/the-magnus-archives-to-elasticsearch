@@ -289,10 +289,23 @@ class MagnusEpisode(object):
         actors_line = actors_line.replace('(CONT\'D)', '')
         actors_line = actors_line.replace('(CON’T)', '')
         actors_line = actors_line.replace('(STATEMENT)', '')
+        actors_line = actors_line.replace('(STATMEMENT)', '')
+        actors_line = actors_line.replace('[STATEMENT]', '')
+        actors_line = actors_line.replace('[STATMEMENT]', '')
         actors_line = actors_line.replace('(BACKGROUND)', '')
         actors_line = actors_line.replace('(DISTANT)', '')
         actors_line = actors_line.replace('(Cont.)', '')
         actors_line = actors_line.replace('Cont.', '')
+        actors_line = actors_line.replace('(NIKOLA)', '')
+        actors_line = actors_line.replace('(TAPE)', '')
+        actors_line = actors_line.replace('NOT SASHA', 'NOT-SASHA')
+        actors_line = actors_line.replace('NOT!SASHA', 'NOT-SASHA')
+        actors_line = actors_line.replace('ALSO MARTIN', 'NOT-SASHA')
+        actors_line = actors_line.replace('ARCHVIST', 'ARCHIVIST')
+        actors_line = actors_line.replace('JONANTHAN SIMS', 'JONATHAN SIMS')
+        actors_line = actors_line.replace('JONATHA SIMS', 'JONATHAN SIMS')
+        actors_line = actors_line.replace('JONATHANS SIMS', 'JONATHAN SIMS')
+        actors_line = actors_line.replace('ARCHIVIST ON TAPE', 'ARCHIVIST')
         actors_line = actors_line.strip()
 
         return actors_line
@@ -333,8 +346,10 @@ class MagnusEpisode(object):
         actors = list()
         for actors_line_separated_by_comma in actors_line.split(','):
             for actors_line_separated_by_slash in actors_line_separated_by_comma.strip().split('/'):
-                for actors_line_separated_by_AND in actors_line_separated_by_slash.strip().split(' AND '):
-                    actors.append(actors_line_separated_by_AND.strip())
+                for actors_line_separated_by_ampersand in actors_line_separated_by_slash.strip().split(' & '):
+                    for actors_line_separated_by_also in actors_line_separated_by_ampersand.strip().split('ALSO'):
+                        for actors_line_separated_by_AND in actors_line_separated_by_also.strip().split(' AND '):
+                            actors.append(actors_line_separated_by_AND.strip())
 
         return actors
 
