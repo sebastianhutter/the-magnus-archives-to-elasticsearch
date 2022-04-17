@@ -304,7 +304,7 @@ class MagnusEpisode(object):
         actors_line = actors_line.replace('(TAPE)', '')
         actors_line = actors_line.replace('NOT SASHA', 'NOT-SASHA')
         actors_line = actors_line.replace('NOT!SASHA', 'NOT-SASHA')
-        actors_line = actors_line.replace('ALSO MARTIN', 'NOT-SASHA')
+        actors_line = actors_line.replace('ALSO MARTIN', 'MARTIN')
         actors_line = actors_line.replace('ARCHVIST', 'ARCHIVIST')
         actors_line = actors_line.replace('JONANTHAN SIMS', 'JONATHAN SIMS')
         actors_line = actors_line.replace('JONATHA SIMS', 'JONATHAN SIMS')
