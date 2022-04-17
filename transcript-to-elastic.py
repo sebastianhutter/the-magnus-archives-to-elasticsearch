@@ -3,6 +3,7 @@ import click
 import sys
 import logging
 import os
+import glob
 
 from transcript import MagnusEpisode, MagnusEpisodeIndex, MagnusTranscriptIndex
 from es import ElasticManagement, KibanaManagement
@@ -44,8 +45,13 @@ def get_files_to_parse(path: str):
     if os.path.isfile(path):
         return [path]
 
-    # if not get all files in the directory
-    return [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    # if a directory get all docx files in all subfolders
+    files = list()
+    for f in glob.glob(os.path.join(path, '**', '*.docx'), recursive=True):
+        files.append(f)
+
+    return files
+
 
 def parse_file_for_magnus_archives(path: str):
     """
